@@ -177,3 +177,57 @@ INSERT INTO cliente (id, nome, sexo, idade, nascimento) VALUES
 (99, 'Cliente 99', 'o', 50, '1974-03-07'),
 (100, 'Cliente 100', 'm', 18, '2006-04-08');
 
+CREATE TRIGGER vendedor_especial
+AFTER INSERT ON venda
+FOR EACH ROW
+BEGIN
+    DECLARE total_vendido DECIMAL(10,2);
+    
+    SELECT SUM(p.valor)
+    INTO total_vendido
+    FROM venda v
+    JOIN produto p ON v.id = p.id
+    WHERE v.id_vendedor = NEW.id_vendedor;
+
+    IF total_vendido > 1000.00 THEN
+        INSERT INTO funcionarioespecial (id, nome, idade, sexo, cargo, salario, nascimento)
+        SELECT id, nome, idade, sexo, cargo, salario + (0.05 * total_vendido), nascimento
+        FROM funcionario
+        WHERE id = NEW.id_vendedor;
+        
+        SIGNAL SQLSTATE '45000' --nao sei oq é isso, tava dando erro CHAT deu add isso como solução
+        SET MESSAGE_TEXT = CONCAT('Bônus salarial total necessário: ', (0.05 * total_vendido));
+    END IF;
+END;
+
+CREATE TRIGGER cliente_especial
+AFTER INSERT ON venda
+FOR EACH ROW
+BEGIN
+    DECLARE total_gasto DECIMAL(10,2);
+
+    SELECT SUM(p.valor)
+    INTO total_gasto
+    FROM venda v
+    JOIN produto p ON v.id = p.id
+    WHERE v.id_cliente = NEW.id_cliente;
+
+    IF total_gasto > 500.00 THEN
+        INSERT INTO clienteespecial (nome, sexo, idade, id_cliente, cashback)
+        SELECT nome, sexo, idade, id, 0.02 * total_gasto
+        FROM cliente
+        WHERE id = NEW.id_cliente;
+        
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = CONCAT('Valor necessário para cashback: ', (0.02 * total_gasto));
+    END IF;
+END;
+
+CREATE TRIGGER remove_cliente_especial
+AFTER UPDATE ON clienteespecial
+FOR EACH ROW
+BEGIN
+    IF NEW.cashback = 0 THEN
+        DELETE FROM clienteespecial WHERE id = NEW.id;
+    END IF;
+END;
