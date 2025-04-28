@@ -231,3 +231,18 @@ BEGIN
         DELETE FROM clienteespecial WHERE id = NEW.id;
     END IF;
 END;
+
+CREATE VIEW view_produtos_quantidade AS
+SELECT p.nome, p.quantidade
+FROM produto p;
+
+CREATE VIEW view_vendas_funcionario AS
+SELECT f.nome AS vendedor, COUNT(v.id) AS total_vendas
+FROM funcionario f
+JOIN venda v ON f.id = v.id_vendedor
+GROUP BY f.nome;
+
+CREATE VIEW view_cashback_cliente AS
+SELECT c.nome, ce.cashback
+FROM cliente c
+JOIN clienteespecial ce ON c.id = ce.id_cliente;
