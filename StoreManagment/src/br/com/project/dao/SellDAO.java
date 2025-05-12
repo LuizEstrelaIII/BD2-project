@@ -9,9 +9,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import javax.swing.JOptionPane;
 
+import br.com.project.model.ClienteEspecial;
+import br.com.project.model.Funcionario;
 import br.com.project.model.Produto;
 
 public class SellDAO {
@@ -93,7 +96,7 @@ public class SellDAO {
                 }
             }
 
-            String sqlCashback = "SELECT cashback FROM clienteespecial WHERE id_cliente = ?"; // Correção de sintaxe
+            String sqlCashback = "SELECT cashback FROM clienteespecial WHERE id_cliente = ?"; 
             try (PreparedStatement stmt = conn.prepareStatement(sqlCashback)) {
                 stmt.setInt(1, idCliente);
                 ResultSet rs = stmt.executeQuery();
@@ -136,4 +139,84 @@ public class SellDAO {
         }
         return vendas;
     }
+    
+    public void reajustarSalario(String categoria, double percentual) {
+        String sql = "UPDATE funcionario SET salario = salario * (1 + ?) WHERE cargo = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setDouble(1, percentual / 100); 
+            stmt.setString(2, categoria);
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected > 0) {
+                JOptionPane.showMessageDialog(null, "Reajuste de " + percentual + "% aplicado com sucesso a " + rowsAffected + " funcionários da categoria " + categoria + "!");
+            } else {
+                JOptionPane.showMessageDialog(null, "Nenhum funcionário encontrado na categoria " + categoria + "!");
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Erro ao realizar reajuste: " + e.getMessage());
+        }
+    }
+    
+    
+    public ClienteEspecial realizarSorteio() {
+        List<ClienteEspecial> clientesEspeciais = new ArrayList<>();
+        String sql = "SELECT * FROM clienteespecial";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                clientesEspeciais.add(new ClienteEspecial(
+                    rs.getInt("id"),           
+                    rs.getString("nome"),    
+                    rs.getString("sexo"),     
+                    rs.getInt("idade"),        
+                    rs.getInt("id_cliente"),   
+                    rs.getBigDecimal("cashback") 
+                ));
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Erro ao realizar sorteio: " + e.getMessage());
+            return null;
+        }
+
+        if (clientesEspeciais.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Nenhum cliente especial disponível para o sorteio!");
+            return null;
+        }
+
+        Random random = new Random();
+        int indiceSorteado = random.nextInt(clientesEspeciais.size());
+        ClienteEspecial clienteSorteado = clientesEspeciais.get(indiceSorteado);
+        JOptionPane.showMessageDialog(null, "Cliente sorteado: " + clienteSorteado.getNome() + " (ID: " + clienteSorteado.getIdCliente() + ")");
+        return clienteSorteado;
+    }
+    
+    public List<Funcionario> listarFuncionarios() {
+        List<Funcionario> funcionarios = new ArrayList<>();
+        String sql = "SELECT id, nome, idade, sexo, cargo, salario, nascimento FROM funcionario";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                funcionarios.add(new Funcionario(
+                    rs.getInt("id"),
+                    rs.getString("nome"),
+                    rs.getInt("idade"),         
+                    rs.getString("sexo"),      
+                    rs.getString("cargo"),      
+                    rs.getBigDecimal("salario"),
+                    rs.getDate("nascimento")    
+                ));
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Erro ao listar funcionários: " + e.getMessage());
+        }
+        return funcionarios;
+    }
 }
+
+    
+
+    
