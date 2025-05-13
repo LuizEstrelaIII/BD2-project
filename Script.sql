@@ -47,6 +47,18 @@ CREATE TABLE venda (
     FOREIGN KEY (id_cliente) REFERENCES cliente(id)
 );
 
+-- prof não pediu para criar mas na trigger temos que usar
+CREATE TABLE funcionarioespecial (
+    id INT PRIMARY KEY,
+    nome VARCHAR(100),
+    idade INT,
+    sexo ENUM('m', 'f', 'o') NOT NULL,
+    cargo ENUM('vendedor', 'gerente', 'CEO') NOT NULL,
+    salario DECIMAL(10,2),
+    nascimento DATE,
+    bonus DECIMAL(10,2)
+);
+
 INSERT INTO produto (id, nome, quantidade, descricao, valor) VALUES
 (1, 'Teclado Gamer', 50, 'Teclado mecânico RGB', 250.00),
 (2, 'Mouse Óptico', 100, 'Mouse 16000 DPI', 150.00),
