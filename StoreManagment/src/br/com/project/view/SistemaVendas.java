@@ -256,6 +256,16 @@ public class SistemaVendas {
         listarProdutosPanel.add(btnAtualizarProdutos, BorderLayout.SOUTH);
         tabbedPane.addTab("Listar Produtos", listarProdutosPanel);
 
+        JPanel gerenciarBancoPanel = new JPanel();
+        gerenciarBancoPanel.setLayout(new GridLayout(2, 1));
+        JButton btnDeletarBanco = new JButton("Deletar Banco de Dados");
+        JButton btnCriarBanco = new JButton("Criar Banco de Dados");
+        btnDeletarBanco.addActionListener(e -> vendaDAO.deletarBancoDados());
+        btnCriarBanco.addActionListener(e -> vendaDAO.criarBancoDados());
+        gerenciarBancoPanel.add(btnDeletarBanco);
+        gerenciarBancoPanel.add(btnCriarBanco);
+        tabbedPane.addTab("Gerenciar Banco", gerenciarBancoPanel);
+
         frame.add(tabbedPane);
         frame.setVisible(true);
     }
