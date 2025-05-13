@@ -59,6 +59,17 @@ CREATE TABLE funcionarioespecial (
     bonus DECIMAL(10,2)
 );
 
+-- prof não pediu para criar mas na trigger temos que usar
+CREATE TABLE venda_item (
+    id_venda INT,
+    id_produto INT,
+    quantidade INT,
+    valor_unitario DECIMAL(10,2),
+    PRIMARY KEY (id_venda, id_produto),
+    FOREIGN KEY (id_venda) REFERENCES venda(id),
+    FOREIGN KEY (id_produto) REFERENCES produto(id)
+);
+
 INSERT INTO produto (id, nome, quantidade, descricao, valor) VALUES
 (1, 'Teclado Gamer', 50, 'Teclado mecânico RGB', 250.00),
 (2, 'Mouse Óptico', 100, 'Mouse 16000 DPI', 150.00),
