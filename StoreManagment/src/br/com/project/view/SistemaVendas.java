@@ -21,7 +21,8 @@ import javax.swing.SwingUtilities;
 
 import br.com.project.dao.SellDAO;
 import br.com.project.model.ClienteEspecial;
-import br.com.project.model.Funcionario; 
+import br.com.project.model.Funcionario;
+import br.com.project.model.Produto;
 
 public class SistemaVendas {
     private JFrame frame;
@@ -72,25 +73,15 @@ public class SistemaVendas {
         vendasPanel.add(btnRegistrar);
         tabbedPane.addTab("Vendas", vendasPanel);
 
-     
+      
         JPanel estatisticasPanel = new JPanel();
         estatisticasPanel.setLayout(new BorderLayout());
         JTextArea txtEstatisticas = new JTextArea();
         txtEstatisticas.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(txtEstatisticas);
         JButton btnAtualizarEstatisticas = new JButton("Atualizar Estatísticas");
-        btnAtualizarEstatisticas.addActionListener(e -> {
-            txtEstatisticas.setText("");
-            List<String> vendas = vendaDAO.listarVendasPorFuncionario();
-            for (String venda : vendas) {
-                txtEstatisticas.append(venda + "\n");
-            }
-        });
-        estatisticasPanel.add(scrollPane, BorderLayout.CENTER);
-        estatisticasPanel.add(btnAtualizarEstatisticas, BorderLayout.SOUTH);
-        tabbedPane.addTab("Estatísticas", estatisticasPanel);
-
-       
+        
+        
         JPanel cadastrarProdutoPanel = new JPanel();
         cadastrarProdutoPanel.setLayout(new GridLayout(6, 2));
         JLabel lblNomeProduto = new JLabel("Nome:");
@@ -129,61 +120,54 @@ public class SistemaVendas {
         cadastrarProdutoPanel.add(btnCadastrarProduto);
         tabbedPane.addTab("Cadastrar Produto", cadastrarProdutoPanel);
 
-
-        JPanel cadastrarFuncionarioPanel = new JPanel();
-        cadastrarFuncionarioPanel.setLayout(new GridLayout(7, 2));
-        JLabel lblNomeFuncionario = new JLabel("Nome:");
-        JTextField txtNomeFuncionario = new JTextField();
-        JLabel lblIdadeFuncionario = new JLabel("Idade:");
-        JTextField txtIdadeFuncionario = new JTextField();
-        JLabel lblSexoFuncionario = new JLabel("Sexo (m/f/o):");
-        JTextField txtSexoFuncionario = new JTextField();
-        JLabel lblCargoFuncionario = new JLabel("Cargo:");
-        JTextField txtCargoFuncionario = new JTextField();
-        JLabel lblSalarioFuncionario = new JLabel("Salário:");
-        JTextField txtSalarioFuncionario = new JTextField();
-        JLabel lblNascimentoFuncionario = new JLabel("Nascimento (yyyy-MM-dd):");
-        JTextField txtNascimentoFuncionario = new JTextField();
-        JButton btnCadastrarFuncionario = new JButton("Cadastrar Funcionário");
-        btnCadastrarFuncionario.addActionListener(e -> {
+   
+        JPanel cadastrarClientePanel = new JPanel();
+        cadastrarClientePanel.setLayout(new GridLayout(5, 2));
+        JLabel lblNomeCliente = new JLabel("Nome:");
+        JTextField txtNomeCliente = new JTextField();
+        JLabel lblSexoCliente = new JLabel("Sexo (m/f/o):");
+        JTextField txtSexoCliente = new JTextField();
+        JLabel lblIdadeCliente = new JLabel("Idade:");
+        JTextField txtIdadeCliente = new JTextField();
+        JLabel lblNascimentoCliente = new JLabel("Nascimento (yyyy-MM-dd):");
+        JTextField txtNascimentoCliente = new JTextField();
+        JButton btnCadastrarCliente = new JButton("Cadastrar Cliente");
+        btnCadastrarCliente.addActionListener(e -> {
             try {
-                String nome = txtNomeFuncionario.getText();
-                int idade = Integer.parseInt(txtIdadeFuncionario.getText());
-                String sexo = txtSexoFuncionario.getText();
-                String cargo = txtCargoFuncionario.getText();
-                BigDecimal salario = new BigDecimal(txtSalarioFuncionario.getText());
+                String nome = txtNomeCliente.getText();
+                String sexo = txtSexoCliente.getText();
+                if (!sexo.matches("[mfo]")) {
+                    JOptionPane.showMessageDialog(frame, "Sexo deve ser 'm', 'f' ou 'o'.");
+                    return;
+                }
+                int idade = Integer.parseInt(txtIdadeCliente.getText());
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                Date nascimentoUtil = sdf.parse(txtNascimentoFuncionario.getText());
+                Date nascimentoUtil = sdf.parse(txtNascimentoCliente.getText());
                 java.sql.Date nascimentoSql = new java.sql.Date(nascimentoUtil.getTime());
-                vendaDAO.cadastroFuncionario(nome, idade, cargo, salario, nascimentoSql);
-                txtNomeFuncionario.setText("");
-                txtIdadeFuncionario.setText("");
-                txtCargoFuncionario.setText("");
-                txtSalarioFuncionario.setText("");
-                txtNascimentoFuncionario.setText("");
+                vendaDAO.cadastroCliente(nome, sexo, idade, nascimentoSql);
+                txtNomeCliente.setText("");
+                txtSexoCliente.setText("");
+                txtIdadeCliente.setText("");
+                txtNascimentoCliente.setText("");
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(frame, "Idade e Salário devem ser números válidos.");
+                JOptionPane.showMessageDialog(frame, "Idade deve ser um número válido.");
             } catch (ParseException ex) {
                 JOptionPane.showMessageDialog(frame, "Data inválida. Use o formato yyyy-MM-dd.");
             }
         });
-        cadastrarFuncionarioPanel.add(lblNomeFuncionario);
-        cadastrarFuncionarioPanel.add(txtNomeFuncionario);
-        cadastrarFuncionarioPanel.add(lblIdadeFuncionario);
-        cadastrarFuncionarioPanel.add(txtIdadeFuncionario);
-        cadastrarFuncionarioPanel.add(lblSexoFuncionario);
-        cadastrarFuncionarioPanel.add(txtSexoFuncionario);
-        cadastrarFuncionarioPanel.add(lblCargoFuncionario);
-        cadastrarFuncionarioPanel.add(txtCargoFuncionario);
-        cadastrarFuncionarioPanel.add(lblSalarioFuncionario);
-        cadastrarFuncionarioPanel.add(txtSalarioFuncionario);
-        cadastrarFuncionarioPanel.add(lblNascimentoFuncionario);
-        cadastrarFuncionarioPanel.add(txtNascimentoFuncionario);
-        cadastrarFuncionarioPanel.add(new JLabel());
-        cadastrarFuncionarioPanel.add(btnCadastrarFuncionario);
-        tabbedPane.addTab("Cadastrar Funcionário", cadastrarFuncionarioPanel);
+        cadastrarClientePanel.add(lblNomeCliente);
+        cadastrarClientePanel.add(txtNomeCliente);
+        cadastrarClientePanel.add(lblSexoCliente);
+        cadastrarClientePanel.add(txtSexoCliente);
+        cadastrarClientePanel.add(lblIdadeCliente);
+        cadastrarClientePanel.add(txtIdadeCliente);
+        cadastrarClientePanel.add(lblNascimentoCliente);
+        cadastrarClientePanel.add(txtNascimentoCliente);
+        cadastrarClientePanel.add(new JLabel());
+        cadastrarClientePanel.add(btnCadastrarCliente);
+        tabbedPane.addTab("Cadastrar Cliente", cadastrarClientePanel);
 
-       
+     
         JPanel sorteioPanel = new JPanel();
         sorteioPanel.setLayout(new BorderLayout());
         JTextArea txtSorteio = new JTextArea();
@@ -197,13 +181,14 @@ public class SistemaVendas {
                 txtSorteio.append("Cliente Sorteado:\n");
                 txtSorteio.append("ID: " + clienteSorteado.getIdCliente() + "\n");
                 txtSorteio.append("Nome: " + clienteSorteado.getNome() + "\n");
+                txtSorteio.append("Cashback: " + clienteSorteado.getCashback() + "\n");
             }
         });
         sorteioPanel.add(scrollSorteio, BorderLayout.CENTER);
         sorteioPanel.add(btnRealizarSorteio, BorderLayout.SOUTH);
         tabbedPane.addTab("Sorteio", sorteioPanel);
 
-        
+     
         JPanel reajustePanel = new JPanel();
         reajustePanel.setLayout(new GridLayout(3, 2));
         JLabel lblCategoria = new JLabel("Categoria:");
@@ -234,6 +219,7 @@ public class SistemaVendas {
         reajustePanel.add(btnReajustar);
         tabbedPane.addTab("Reajuste", reajustePanel);
 
+ 
         JPanel listarFuncionariosPanel = new JPanel();
         listarFuncionariosPanel.setLayout(new BorderLayout());
         JTextArea txtFuncionarios = new JTextArea();
@@ -242,17 +228,33 @@ public class SistemaVendas {
         JButton btnAtualizarFuncionarios = new JButton("Atualizar Lista de Funcionários");
         btnAtualizarFuncionarios.addActionListener(e -> {
             txtFuncionarios.setText("");
-            
-            List<Funcionario> funcionarios = vendaDAO.listarFuncionarios(); 
+            List<Funcionario> funcionarios = vendaDAO.listarFuncionarios();
             for (Funcionario funcionario : funcionarios) {
                 txtFuncionarios.append("ID: " + funcionario.getId() + ", Nome: " + funcionario.getNome() +
                                       ", Salário: " + funcionario.getSalario() + "\n");
-           
             }
         });
         listarFuncionariosPanel.add(scrollFuncionarios, BorderLayout.CENTER);
         listarFuncionariosPanel.add(btnAtualizarFuncionarios, BorderLayout.SOUTH);
         tabbedPane.addTab("Listar Funcionários", listarFuncionariosPanel);
+
+       
+        JPanel listarProdutosPanel = new JPanel();
+        listarProdutosPanel.setLayout(new BorderLayout());
+        JTextArea txtProdutos = new JTextArea();
+        txtProdutos.setEditable(false);
+        JScrollPane scrollProdutos = new JScrollPane(txtProdutos);
+        JButton btnAtualizarProdutos = new JButton("Atualizar Lista de Produtos");
+        btnAtualizarProdutos.addActionListener(e -> {
+            txtProdutos.setText("");
+            List<Produto> produtos = vendaDAO.listarProdutos();
+            for (Produto produto : produtos) {
+                txtProdutos.append("Nome: " + produto.getNome() + ", Quantidade: " + produto.getQuantidade() + "\n");
+            }
+        });
+        listarProdutosPanel.add(scrollProdutos, BorderLayout.CENTER);
+        listarProdutosPanel.add(btnAtualizarProdutos, BorderLayout.SOUTH);
+        tabbedPane.addTab("Listar Produtos", listarProdutosPanel);
 
         frame.add(tabbedPane);
         frame.setVisible(true);
