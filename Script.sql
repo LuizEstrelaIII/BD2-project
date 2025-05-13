@@ -247,3 +247,15 @@ CREATE VIEW view_cashback_cliente AS
 SELECT c.nome, ce.cashback
 FROM cliente c
 JOIN clienteespecial ce ON c.id = ce.id_cliente;
+
+CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin123';
+CREATE USER 'gerente'@'localhost' IDENTIFIED BY 'gerente123';
+CREATE USER 'funcionario'@'localhost' IDENTIFIED BY 'funcionario123';
+
+GRANT ALL PRIVILEGES ON empresa.* TO 'admin'@'localhost';
+
+GRANT SELECT, DELETE, UPDATE ON empresa.* TO 'gerente'@'localhost';
+
+GRANT INSERT, SELECT ON empresa.* TO 'funcionario'@'localhost';
+
+FLUSH PRIVILEGES;
