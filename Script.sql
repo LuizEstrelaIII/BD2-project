@@ -1,4 +1,5 @@
 CREATE DATABASE IF NOT EXISTS empresa; -- ve com os cara esse "if not"
+DROP DATABASE IF EXISTS empresa;
 USE empresa;
 
 CREATE TABLE cliente (
