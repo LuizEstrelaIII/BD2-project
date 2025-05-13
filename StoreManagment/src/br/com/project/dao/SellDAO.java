@@ -13,13 +13,13 @@ import java.util.Random;
 
 import javax.swing.JOptionPane;
 
+import br.com.project.model.Produto;
 import br.com.project.model.ClienteEspecial;
 import br.com.project.model.Funcionario;
-import br.com.project.model.Produto;
 
 public class SellDAO {
 
-    public static void cadastroProdutos(String nome, int quantidade, String descricao, BigDecimal valor) {
+    public void cadastroProdutos(String nome, int quantidade, String descricao, BigDecimal valor) {
         String sql = "INSERT INTO produto (nome, quantidade, descricao, valor) VALUES (?, ?, ?, ?)";
         
         try (Connection conn = DatabaseConnection.getConnection(); 
@@ -35,25 +35,26 @@ public class SellDAO {
         }
     }
 
-    public void cadastroFuncionario(String nome, int idade, String cargo, BigDecimal salario, Date nascimento) {
-        String sql = "INSERT INTO funcionario (nome, idade, cargo, salario, nascimento) VALUES (?, ?, ?, ?, ?)";
+ 
+    public void cadastroCliente(String nome, String sexo, int idade, Date nascimento) {
+        String sql = "INSERT INTO cliente (nome, sexo, idade, nascimento) VALUES (?, ?, ?, ?)";
         
         try (Connection conn = DatabaseConnection.getConnection(); 
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, nome);
-            stmt.setInt(2, idade);
-            stmt.setString(3, cargo);
-            stmt.setBigDecimal(4, salario);
-            stmt.setDate(5, nascimento);
+            stmt.setString(2, sexo);
+            stmt.setInt(3, idade);
+            stmt.setDate(4, nascimento);
             stmt.executeUpdate();
-            JOptionPane.showMessageDialog(null, "Funcionário cadastrado!!");
+            JOptionPane.showMessageDialog(null, "Cliente cadastrado!!");
         } catch (SQLException e) { 
-            JOptionPane.showMessageDialog(null, "Erro ao realizar cadastro do funcionário: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro ao realizar cadastro do cliente: " + e.getMessage());
         }
     }
 
     public void registrarVenda(int idVendedor, int idCliente, int idProduto) {
-        String sqlVenda = "INSERT INTO venda (id_vendedor, id_cliente, id_produto, data) VALUES (?, ?, ?, CURDATE())";
+        String sqlVenda = "INSERT INTO venda (id_vendedor, id_cliente, data) VALUES (?, ?, CURDATE())";
+        String sqlVendaItem = "INSERT INTO venda_item (id_venda, id_produto, quantidade, valor_unitario) VALUES (?, ?, 1, (SELECT valor FROM produto WHERE id = ?))";
         String sqlUpdateQuantidade = "UPDATE produto SET quantidade = quantidade - 1 WHERE id = ? AND quantidade > 0";
 
         try (Connection conn = DatabaseConnection.getConnection()) {
@@ -67,16 +68,29 @@ public class SellDAO {
                 }
             }
 
-            try (PreparedStatement stmtVenda = conn.prepareStatement(sqlVenda)) {
+            int vendaId;
+            try (PreparedStatement stmtVenda = conn.prepareStatement(sqlVenda, Statement.RETURN_GENERATED_KEYS)) {
                 stmtVenda.setInt(1, idVendedor);
                 stmtVenda.setInt(2, idCliente);
-                stmtVenda.setInt(3, idProduto);
                 stmtVenda.executeUpdate();
+                ResultSet rs = stmtVenda.getGeneratedKeys();
+                if (rs.next()) {
+                    vendaId = rs.getInt(1);
+                } else {
+                    throw new SQLException("Falha ao obter ID da venda.");
+                }
+            }
+
+            try (PreparedStatement stmtVendaItem = conn.prepareStatement(sqlVendaItem)) {
+                stmtVendaItem.setInt(1, vendaId);
+                stmtVendaItem.setInt(2, idProduto);
+                stmtVendaItem.setInt(3, idProduto);
+                stmtVendaItem.executeUpdate();
             }
 
             conn.commit();
 
-            verificarBonus(idVendedor, idCliente); 
+            verificarBonus(idVendedor, idCliente);
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(null, "Erro ao registrar venda: " + e.getMessage());
         }
@@ -96,7 +110,7 @@ public class SellDAO {
                 }
             }
 
-            String sqlCashback = "SELECT cashback FROM clienteespecial WHERE id_cliente = ?"; 
+            String sqlCashback = "SELECT cashback FROM clienteespecial WHERE id_cliente = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sqlCashback)) {
                 stmt.setInt(1, idCliente);
                 ResultSet rs = stmt.executeQuery();
@@ -124,40 +138,30 @@ public class SellDAO {
         return produtos;
     }
 
-    public List<String> listarVendasPorFuncionario() {
-        List<String> vendas = new ArrayList<>();
-        String sql = "SELECT * FROM view_vendas_funcionario";
+    public List<Funcionario> listarFuncionarios() {
+        List<Funcionario> funcionarios = new ArrayList<>();
+        String sql = "SELECT id, nome, idade, sexo, cargo, salario, nascimento FROM funcionario";
 
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                vendas.add(rs.getString("vendedor") + ": " + rs.getInt("total_vendas") + " vendas");
+                funcionarios.add(new Funcionario(
+                    rs.getInt("id"),
+                    rs.getString("nome"),
+                    rs.getInt("idade"),
+                    rs.getString("sexo"),
+                    rs.getString("cargo"),
+                    rs.getBigDecimal("salario"),
+                    rs.getDate("nascimento")
+                ));
             }
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Erro ao listar vendas: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro ao listar funcionários: " + e.getMessage());
         }
-        return vendas;
+        return funcionarios;
     }
-    
-    public void reajustarSalario(String categoria, double percentual) {
-        String sql = "UPDATE funcionario SET salario = salario * (1 + ?) WHERE cargo = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setDouble(1, percentual / 100); 
-            stmt.setString(2, categoria);
-            int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected > 0) {
-                JOptionPane.showMessageDialog(null, "Reajuste de " + percentual + "% aplicado com sucesso a " + rowsAffected + " funcionários da categoria " + categoria + "!");
-            } else {
-                JOptionPane.showMessageDialog(null, "Nenhum funcionário encontrado na categoria " + categoria + "!");
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Erro ao realizar reajuste: " + e.getMessage());
-        }
-    }
-    
-    
+
     public ClienteEspecial realizarSorteio() {
         List<ClienteEspecial> clientesEspeciais = new ArrayList<>();
         String sql = "SELECT * FROM clienteespecial";
@@ -167,12 +171,12 @@ public class SellDAO {
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 clientesEspeciais.add(new ClienteEspecial(
-                    rs.getInt("id"),           
-                    rs.getString("nome"),    
-                    rs.getString("sexo"),     
-                    rs.getInt("idade"),        
-                    rs.getInt("id_cliente"),   
-                    rs.getBigDecimal("cashback") 
+                    rs.getInt("id"),
+                    rs.getString("nome"),
+                    rs.getString("sexo"),
+                    rs.getInt("idade"),
+                    rs.getInt("id_cliente"),
+                    rs.getBigDecimal("cashback")
                 ));
             }
         } catch (SQLException e) {
@@ -191,32 +195,22 @@ public class SellDAO {
         JOptionPane.showMessageDialog(null, "Cliente sorteado: " + clienteSorteado.getNome() + " (ID: " + clienteSorteado.getIdCliente() + ")");
         return clienteSorteado;
     }
-    
-    public List<Funcionario> listarFuncionarios() {
-        List<Funcionario> funcionarios = new ArrayList<>();
-        String sql = "SELECT id, nome, idade, sexo, cargo, salario, nascimento FROM funcionario";
 
+    public void reajustarSalario(String categoria, double percentual) {
+        String sql = "UPDATE funcionario SET salario = salario * (1 + ?) WHERE cargo = ?";
         try (Connection conn = DatabaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                funcionarios.add(new Funcionario(
-                    rs.getInt("id"),
-                    rs.getString("nome"),
-                    rs.getInt("idade"),         
-                    rs.getString("sexo"),      
-                    rs.getString("cargo"),      
-                    rs.getBigDecimal("salario"),
-                    rs.getDate("nascimento")    
-                ));
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setDouble(1, percentual / 100);
+            stmt.setString(2, categoria);
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected > 0) {
+                JOptionPane.showMessageDialog(null, "Reajuste de " + percentual + "% aplicado com sucesso a " + rowsAffected + " funcionários da categoria " + categoria + "!");
+            } else {
+                JOptionPane.showMessageDialog(null, "Nenhum funcionário encontrado na categoria  " + categoria + "!");
             }
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Erro ao listar funcionários: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro ao realizar reajuste: " + e.getMessage());
         }
-        return funcionarios;
     }
+
 }
-
-    
-
-    
