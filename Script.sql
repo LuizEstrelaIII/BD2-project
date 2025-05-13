@@ -232,28 +232,41 @@ BEGIN
 END//
 DELIMITER ;
 
+
+
+DELIMITER //
+
 CREATE TRIGGER cliente_especial
-AFTER INSERT ON venda
+AFTER INSERT ON venda_item
 FOR EACH ROW
 BEGIN
     DECLARE total_gasto DECIMAL(10,2);
 
-    SELECT SUM(p.valor)
+    -- Soma o total gasto por esse cliente em todas as vendas
+    SELECT SUM(vi.quantidade * vi.valor_unitario)
     INTO total_gasto
     FROM venda v
-    JOIN produto p ON v.id = p.id
-    WHERE v.id_cliente = NEW.id_cliente;
+    JOIN venda_item vi ON vi.id_venda = v.id
+    WHERE v.id_cliente = (SELECT id_cliente FROM venda WHERE id = NEW.id_venda);
 
-    IF total_gasto > 500.00 THEN
+    -- Se o cliente ainda não for especial e gastou mais de 500, insere
+    IF total_gasto > 500.00 AND NOT EXISTS (
+        SELECT 1 FROM clienteespecial
+        WHERE id_cliente = (SELECT id_cliente FROM venda WHERE id = NEW.id_venda)
+    ) THEN
         INSERT INTO clienteespecial (nome, sexo, idade, id_cliente, cashback)
         SELECT nome, sexo, idade, id, 0.02 * total_gasto
         FROM cliente
-        WHERE id = NEW.id_cliente;
-        
+        WHERE id = (SELECT id_cliente FROM venda WHERE id = NEW.id_venda);
+
+        -- Emite aviso
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = CONCAT('Valor necessário para cashback: ', (0.02 * total_gasto));
+        SET MESSAGE_TEXT = CONCAT('Valor necessário para cashback: R$', FORMAT(0.02 * total_gasto, 2));
     END IF;
-END;
+END //
+
+DELIMITER ;
+
 
 CREATE TRIGGER remove_cliente_especial
 AFTER UPDATE ON clienteespecial
