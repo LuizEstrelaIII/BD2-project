@@ -201,28 +201,36 @@ INSERT INTO cliente (id, nome, sexo, idade, nascimento) VALUES
 (99, 'Cliente 99', 'o', 50, '1974-03-07'),
 (100, 'Cliente 100', 'm', 18, '2006-04-08');
 
+DELIMITER //
 CREATE TRIGGER vendedor_especial
-AFTER INSERT ON venda
+AFTER INSERT ON venda_item
 FOR EACH ROW
 BEGIN
     DECLARE total_vendido DECIMAL(10,2);
+    DECLARE vendedor_id INT;
     
-    SELECT SUM(p.valor)
+    -- Obter o id do vendedor
+    SELECT id_vendedor INTO vendedor_id FROM venda WHERE id = NEW.id_venda;
+    
+    -- Calcular total vendido pelo vendedor
+    SELECT SUM(vi.quantidade * vi.valor_unitario)
     INTO total_vendido
-    FROM venda v
-    JOIN produto p ON v.id = p.id
-    WHERE v.id_vendedor = NEW.id_vendedor;
-
-    IF total_vendido > 1000.00 THEN
-        INSERT INTO funcionarioespecial (id, nome, idade, sexo, cargo, salario, nascimento)
-        SELECT id, nome, idade, sexo, cargo, salario + (0.05 * total_vendido), nascimento
+    FROM venda_item vi
+    JOIN venda v ON vi.id_venda = v.id
+    WHERE v.id_vendedor = vendedor_id;
+    
+    -- Verificar se já é especial
+    IF total_vendido > 1000.00 AND NOT EXISTS (SELECT 1 FROM funcionarioespecial WHERE id = vendedor_id) THEN
+        INSERT INTO funcionarioespecial (id, nome, idade, sexo, cargo, salario, nascimento, bonus)
+        SELECT id, nome, idade, sexo, cargo, salario, nascimento, (0.05 * total_vendido)
         FROM funcionario
-        WHERE id = NEW.id_vendedor;
+        WHERE id = vendedor_id;
         
-        SIGNAL SQLSTATE '45000' --nao sei oq é isso, tava dando erro CHAT deu add isso como solução
-        SET MESSAGE_TEXT = CONCAT('Bônus salarial total necessário: ', (0.05 * total_vendido));
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = CONCAT('Bônus salarial total necessário: R$', FORMAT(0.05 * total_vendido, 2));
     END IF;
-END;
+END//
+DELIMITER ;
 
 CREATE TRIGGER cliente_especial
 AFTER INSERT ON venda
