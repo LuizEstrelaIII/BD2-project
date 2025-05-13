@@ -213,4 +213,91 @@ public class SellDAO {
         }
     }
 
+    public void deletarBancoDados() {
+        String sql = "DROP DATABASE IF EXISTS empresa";
+
+        try (Connection conn = DatabaseConnection.getConnectionSemBanco(); 
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.executeUpdate();
+            JOptionPane.showMessageDialog(null, "Banco de dados deletado com sucesso!");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Erro ao deletar banco de dados: " + e.getMessage());
+        }
+    }
+    
+    public void criarBancoDados() {
+        try (Connection conn = DatabaseConnection.getConnectionSemBanco(); 
+             Statement stmt = conn.createStatement()) {
+            
+            stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS empresa");
+            
+         
+            stmt.executeUpdate("USE empresa");
+
+           
+            stmt.executeUpdate(
+                "CREATE TABLE cliente (" +
+                "    id INT AUTO_INCREMENT PRIMARY KEY," +
+                "    nome VARCHAR(100)," +
+                "    sexo ENUM('m', 'f', 'o') NOT NULL," +
+                "    idade INT," +
+                "    nascimento DATE" +
+                ")"
+            );
+
+            
+            stmt.executeUpdate(
+                "CREATE TABLE clienteespecial (" +
+                "    id INT AUTO_INCREMENT PRIMARY KEY," +
+                "    nome VARCHAR(100)," +
+                "    sexo ENUM('m', 'f', 'o') NOT NULL," +
+                "    idade INT," +
+                "    id_cliente INT," +
+                "    cashback DECIMAL(10,2)," +
+                "    FOREIGN KEY (id_cliente) REFERENCES cliente(id)" +
+                ")"
+            );
+
+            
+            stmt.executeUpdate(
+                "CREATE TABLE funcionario (" +
+                "    id INT AUTO_INCREMENT PRIMARY KEY," +
+                "    nome VARCHAR(100)," +
+                "    idade INT," +
+                "    sexo ENUM('m', 'f', 'o') NOT NULL," +
+                "    cargo ENUM('vendedor', 'gerente', 'CEO') NOT NULL," +
+                "    salario DECIMAL(10,2)," +
+                "    nascimento DATE" +
+                ")"
+            );
+
+            
+            stmt.executeUpdate(
+                "CREATE TABLE produto (" +
+                "    id INT AUTO_INCREMENT PRIMARY KEY," +
+                "    nome VARCHAR(100)," +
+                "    quantidade INT," +
+                "    descricao VARCHAR(255)," +
+                "    valor DECIMAL(10,2)" +
+                ")"
+            );
+
+          
+            stmt.executeUpdate(
+                "CREATE TABLE venda (" +
+                "    id INT AUTO_INCREMENT PRIMARY KEY," +
+                "    id_vendedor INT," +
+                "    id_cliente INT," +
+                "    data DATE," +
+                "    FOREIGN KEY (id_vendedor) REFERENCES funcionario(id)," +
+                "    FOREIGN KEY (id_cliente) REFERENCES cliente(id)" +
+                ")"
+            );
+
+            JOptionPane.showMessageDialog(null, "Banco de dados e tabelas criados com sucesso!");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Erro ao criar banco de dados: " + e.getMessage());
+        }
+    }
+
 }
