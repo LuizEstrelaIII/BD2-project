@@ -40,7 +40,6 @@ public class SistemaVendas {
 
         JTabbedPane tabbedPane = new JTabbedPane();
 
-       
         JPanel vendasPanel = new JPanel();
         vendasPanel.setLayout(new GridLayout(4, 2));
         JLabel lblVendedor = new JLabel("Vendedor ID:");
@@ -73,15 +72,55 @@ public class SistemaVendas {
         vendasPanel.add(btnRegistrar);
         tabbedPane.addTab("Vendas", vendasPanel);
 
-      
         JPanel estatisticasPanel = new JPanel();
         estatisticasPanel.setLayout(new BorderLayout());
         JTextArea txtEstatisticas = new JTextArea();
         txtEstatisticas.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(txtEstatisticas);
         JButton btnAtualizarEstatisticas = new JButton("Atualizar Estatísticas");
-        
-        
+        btnAtualizarEstatisticas.addActionListener(e -> {
+            txtEstatisticas.setText("");
+            List<String> produtoMaisVendido = vendaDAO.getProdutoMaisVendido();
+            List<String> produtoMenosVendido = vendaDAO.getProdutoMenosVendido();
+            List<String> valorGanhoMaisVendido = vendaDAO.getValorGanhoProdutoMaisVendido();
+            List<String> valorGanhoMenosVendido = vendaDAO.getValorGanhoProdutoMenosVendido();
+            List<String> mesesVendasMenosVendido = vendaDAO.getMesesVendasProdutoMenosVendido();
+            List<String> vendedorMaisVendido = vendaDAO.getVendedorProdutoMaisVendido();
+            List<String> clientesMaisVendas = vendaDAO.getClientesComMaisVendas();
+
+            txtEstatisticas.append("=== Produto Mais Vendido ===\n");
+            for (String item : produtoMaisVendido) {
+                txtEstatisticas.append(item + "\n");
+            }
+            txtEstatisticas.append("\n=== Produto Menos Vendido ===\n");
+            for (String item : produtoMenosVendido) {
+                txtEstatisticas.append(item + "\n");
+            }
+            txtEstatisticas.append("\n=== Valor Ganho com Produto Mais Vendido ===\n");
+            for (String item : valorGanhoMaisVendido) {
+                txtEstatisticas.append(item + "\n");
+            }
+            txtEstatisticas.append("\n=== Valor Ganho com Produto Menos Vendido ===\n");
+            for (String item : valorGanhoMenosVendido) {
+                txtEstatisticas.append(item + "\n");
+            }
+            txtEstatisticas.append("\n=== Meses de Vendas do Produto Menos Vendido ===\n");
+            for (String item : mesesVendasMenosVendido) {
+                txtEstatisticas.append(item + "\n");
+            }
+            txtEstatisticas.append("\n=== Vendedor do Produto Mais Vendido ===\n");
+            for (String item : vendedorMaisVendido) {
+                txtEstatisticas.append(item + "\n");
+            }
+            txtEstatisticas.append("\n=== Clientes com Mais Vendas ===\n");
+            for (String item : clientesMaisVendas) {
+                txtEstatisticas.append(item + "\n");
+            }
+        });
+        estatisticasPanel.add(scrollPane, BorderLayout.CENTER);
+        estatisticasPanel.add(btnAtualizarEstatisticas, BorderLayout.SOUTH);
+        tabbedPane.addTab("Estatísticas", estatisticasPanel);
+
         JPanel cadastrarProdutoPanel = new JPanel();
         cadastrarProdutoPanel.setLayout(new GridLayout(6, 2));
         JLabel lblNomeProduto = new JLabel("Nome:");
@@ -120,7 +159,6 @@ public class SistemaVendas {
         cadastrarProdutoPanel.add(btnCadastrarProduto);
         tabbedPane.addTab("Cadastrar Produto", cadastrarProdutoPanel);
 
-   
         JPanel cadastrarClientePanel = new JPanel();
         cadastrarClientePanel.setLayout(new GridLayout(5, 2));
         JLabel lblNomeCliente = new JLabel("Nome:");
@@ -219,7 +257,7 @@ public class SistemaVendas {
         reajustePanel.add(btnReajustar);
         tabbedPane.addTab("Reajuste", reajustePanel);
 
- 
+     
         JPanel listarFuncionariosPanel = new JPanel();
         listarFuncionariosPanel.setLayout(new BorderLayout());
         JTextArea txtFuncionarios = new JTextArea();
@@ -238,7 +276,7 @@ public class SistemaVendas {
         listarFuncionariosPanel.add(btnAtualizarFuncionarios, BorderLayout.SOUTH);
         tabbedPane.addTab("Listar Funcionários", listarFuncionariosPanel);
 
-       
+   
         JPanel listarProdutosPanel = new JPanel();
         listarProdutosPanel.setLayout(new BorderLayout());
         JTextArea txtProdutos = new JTextArea();
