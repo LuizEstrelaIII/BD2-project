@@ -212,7 +212,7 @@ public class SellDAO {
             JOptionPane.showMessageDialog(null, "Erro ao realizar reajuste: " + e.getMessage());
         }
     }
-
+    
     public void deletarBancoDados() {
         String sql = "DROP DATABASE IF EXISTS empresa";
 
@@ -293,11 +293,219 @@ public class SellDAO {
                 "    FOREIGN KEY (id_cliente) REFERENCES cliente(id)" +
                 ")"
             );
-
+            
+            
+            stmt.executeUpdate(
+                    "CREATE TABLE venda_item (" +
+                    "    id_venda INT," +
+                    "    id_produto INT," +
+                    "    quantidade INT," +
+                    "    valor_unitario DECIMAL(10,2)," +
+                    "    PRIMARY KEY (id_venda, id_produto)," +
+                    "    FOREIGN KEY (id_venda) REFERENCES venda(id)," +
+                    "    FOREIGN KEY (id_produto) REFERENCES produto(id)" +
+                    ")"
+                );
+            
+           
+            stmt.executeUpdate(
+            		"CREATE VIEW view_produtos_quantidade AS\r\n"
+            		+ "SELECT p.nome, p.quantidade\r\n"
+            		+ "FROM produto p;"
+            		);
+            
+            
+            
+            
             JOptionPane.showMessageDialog(null, "Banco de dados e tabelas criados com sucesso!");
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(null, "Erro ao criar banco de dados: " + e.getMessage());
         }
+    }       
+       
+        public List<String> getProdutoMaisVendido() {
+            List<String> resultado = new ArrayList<>();
+            String sql = "SELECT p.nome, COUNT(vi.id_produto) AS total_vendido " +
+                         "FROM produto p " +
+                         "LEFT JOIN venda_item vi ON p.id = vi.id_produto " +
+                         "GROUP BY p.id, p.nome " +
+                         "ORDER BY total_vendido DESC " +
+                         "LIMIT 1";
+
+            try (Connection conn = DatabaseConnection.getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(sql)) {
+                if (rs.next()) {
+                    resultado.add("Produto mais vendido: " + rs.getString("nome") + ", Total: " + rs.getInt("total_vendido"));
+                } else {
+                    resultado.add("Nenhum produto vendido registrado.");
+                }
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Erro ao obter produto mais vendido: " + e.getMessage());
+            }
+            return resultado;
+        }
+
+        public List<String> getProdutoMenosVendido() {
+            List<String> resultado = new ArrayList<>();
+            String sql = "SELECT p.nome, COUNT(vi.id_produto) AS total_vendido " +
+                         "FROM produto p " +
+                         "LEFT JOIN venda_item vi ON p.id = vi.id_produto " +
+                         "GROUP BY p.id, p.nome " +
+                         "ORDER BY total_vendido ASC " +
+                         "LIMIT 1";
+
+            try (Connection conn = DatabaseConnection.getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(sql)) {
+                if (rs.next()) {
+                    resultado.add("Produto menos vendido: " + rs.getString("nome") + ", Total: " + rs.getInt("total_vendido"));
+                } else {
+                    resultado.add("Nenhum produto vendido registrado.");
+                }
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Erro ao obter produto menos vendido: " + e.getMessage());
+            }
+            return resultado;
+        }
+
+        
+        public List<String> getValorGanhoProdutoMaisVendido() {
+            List<String> resultado = new ArrayList<>();
+            String sql = "SELECT p.nome, SUM(vi.quantidade * vi.valor_unitario) AS valor_ganho " +
+                         "FROM produto p " +
+                         "JOIN venda_item vi ON p.id = vi.id_produto " +
+                         "GROUP BY p.id, p.nome " +
+                         "ORDER BY valor_ganho DESC " +
+                         "LIMIT 1";
+
+            try (Connection conn = DatabaseConnection.getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(sql)) {
+                if (rs.next()) {
+                    resultado.add("Valor ganho com produto mais vendido (" + rs.getString("nome") + "): R$" + rs.getBigDecimal("valor_ganho"));
+                } else {
+                    resultado.add("Nenhum valor ganho registrado.");
+                }
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Erro ao obter valor ganho do produto mais vendido: " + e.getMessage());
+            }
+            return resultado;
+        }
+
+        
+        public List<String> getValorGanhoProdutoMenosVendido() {
+            List<String> resultado = new ArrayList<>();
+            String sql = "SELECT p.nome, SUM(vi.quantidade * vi.valor_unitario) AS valor_ganho " +
+                         "FROM produto p " +
+                         "JOIN venda_item vi ON p.id = vi.id_produto " +
+                         "GROUP BY p.id, p.nome " +
+                         "ORDER BY valor_ganho ASC " +
+                         "LIMIT 1";
+
+            try (Connection conn = DatabaseConnection.getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(sql)) {
+                if (rs.next()) {
+                    resultado.add("Valor ganho com produto menos vendido (" + rs.getString("nome") + "): R$" + rs.getBigDecimal("valor_ganho"));
+                } else {
+                    resultado.add("Nenhum valor ganho registrado.");
+                }
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Erro ao obter valor ganho do produto menos vendido: " + e.getMessage());
+            }
+            return resultado;
+        }
+
+        
+        public List<String> getMesesVendasProdutoMenosVendido() {
+            List<String> resultado = new ArrayList<>();
+            String sql = "SELECT DATE_FORMAT(v.data, '%Y-%m') AS mes, SUM(vi.quantidade) AS total_vendas " +
+                         "FROM venda v " +
+                         "JOIN venda_item vi ON v.id = vi.id_venda " +
+                         "JOIN produto p ON vi.id_produto = p.id " +
+                         "WHERE p.id = (SELECT p2.id FROM produto p2 " +
+                         "              JOIN venda_item vi2 ON p2.id = vi2.id_produto " +
+                         "              GROUP BY p2.id " +
+                         "              ORDER BY COUNT(vi2.id_produto) ASC " +
+                         "              LIMIT 1) " +
+                         "GROUP BY mes " +
+                         "ORDER BY total_vendas DESC " +
+                         "LIMIT 2";
+
+            try (Connection conn = DatabaseConnection.getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(sql)) {
+                boolean primeiro = true;
+                while (rs.next() && primeiro) {
+                    resultado.add("Mês de maior vendas: " + rs.getString("mes") + ", Total: " + rs.getInt("total_vendas"));
+                    primeiro = false;
+                }
+                if (rs.next()) {
+                    resultado.add("Mês de menor vendas: " + rs.getString("mes") + ", Total: " + rs.getInt("total_vendas"));
+                } else {
+                    resultado.add("Mês de menor vendas: Nenhum dado disponível.");
+                }
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Erro ao obter meses de vendas do produto menos vendido: " + e.getMessage());
+            }
+            return resultado;
+        }
+
+        public List<String> getVendedorProdutoMaisVendido() {
+            List<String> resultado = new ArrayList<>();
+            String sql = "SELECT f.nome AS vendedor, p.nome AS produto " +
+                         "FROM funcionario f " +
+                         "JOIN venda v ON f.id = v.id_vendedor " +
+                         "JOIN venda_item vi ON v.id = vi.id_venda " +
+                         "JOIN produto p ON vi.id_produto = p.id " +
+                         "WHERE p.id = (SELECT p2.id FROM produto p2 " +
+                         "              JOIN venda_item vi2 ON p2.id = vi2.id_produto " +
+                         "              GROUP BY p2.id " +
+                         "              ORDER BY COUNT(vi2.id_produto) DESC " +
+                         "              LIMIT 1) " +
+                         "GROUP BY f.id, f.nome, p.nome " +
+                         "LIMIT 1";
+
+            try (Connection conn = DatabaseConnection.getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(sql)) {
+                if (rs.next()) {
+                    resultado.add("Vendedor do produto mais vendido (" + rs.getString("produto") + "): " + rs.getString("vendedor"));
+                } else {
+                    resultado.add("Nenhum vendedor associado ao produto mais vendido.");
+                }
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Erro ao obter vendedor do produto mais vendido: " + e.getMessage());
+            }
+            return resultado;
+        }
+
+        public List<String> getClientesComMaisVendas() {
+            List<String> resultado = new ArrayList<>();
+            String sql = "SELECT c.nome, COUNT(v.id) AS total_vendas " +
+                         "FROM cliente c " +
+                         "JOIN venda v ON c.id = v.id_cliente " +
+                         "GROUP BY c.id, c.nome " +
+                         "ORDER BY total_vendas DESC " +
+                         "LIMIT 5";
+
+            try (Connection conn = DatabaseConnection.getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(sql)) {
+                while (rs.next()) {
+                    resultado.add("Cliente: " + rs.getString("nome") + ", Total de Vendas: " + rs.getInt("total_vendas"));
+                }
+                if (resultado.isEmpty()) {
+                    resultado.add("Nenhum cliente com vendas registrado.");
+                }
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Erro ao obter clientes com mais vendas: " + e.getMessage());
+            }
+            return resultado;
+        }
+    
     }
 
-}
+    
+    
